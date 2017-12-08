@@ -1,3 +1,7 @@
+# This project is inspired by https://www.github.com/kyubyong/tacotron
+# December 2017 by Shuming Fang. 
+# fangshuming519@gmail.com.
+# https://github.com/FonzieTree
 import numpy as np
 from modules import *
 np.random.seed(0)
