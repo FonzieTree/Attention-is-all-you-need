@@ -3,6 +3,7 @@
 # fangshuming519@gmail.com.
 # https://github.com/FonzieTree
 # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 import numpy as np
 from hyperparams import Hyperparams as hp
 def normalize(inputs, 
@@ -11,7 +12,7 @@ def normalize(inputs,
     # Layer mean
     params_shape = inputs.shape[-1]
     mean = np.mean(inputs, axis=-1, keepdims=True)
-    variance = np.std(inputs, axis=-1, keepdims=True)
+    variance = np.var(inputs, axis=-1, keepdims=True)
     normalized = (inputs - mean) / ((variance + 1e-8) ** (.5))
     outputs = gamma * normalized + beta
     
