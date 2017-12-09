@@ -20,34 +20,34 @@ print('done')
 num_samples = X.shape[0]
 dff = 2048 # dimention of inner layer
 # Some hyperparameters
-step_size = 1e-0
-reg = 1e-3 # regularization strength
-epoch = 20
-lr = 1
+step_size = 0.0001
+reg = 0.1 # regularization strength
+epoch = 5000
+lr = 0.0001
 
 # Encoder parameters
-encoder_w1 = 0.01*np.random.randn(4,hp.hidden_units,hp.hidden_units)
-encoder_w2 = 0.01*np.random.randn(hp.hidden_units,dff)
-encoder_w3 = 0.01*np.random.randn(dff,hp.hidden_units)
+encoder_w1 = 0.001*np.random.randn(4,hp.hidden_units,hp.hidden_units)
+encoder_w2 = 0.001*np.random.randn(hp.hidden_units,dff)
+encoder_w3 = 0.001*np.random.randn(dff,hp.hidden_units)
 encoder_beta1 = np.zeros((hp.hidden_units))
 encoder_gamma1 = np.ones((hp.hidden_units))
 encoder_beta2 = np.zeros((hp.hidden_units))
 encoder_gamma2 = np.ones((hp.hidden_units))
-lookup_table1 = 0.01*np.random.randn(len(de2idx), hp.hidden_units)
+lookup_table1 = 0.001*np.random.randn(len(de2idx), hp.hidden_units)
 # Decoder parameters
-decoder_w1 = 0.01*np.random.randn(4,hp.hidden_units,hp.hidden_units)
-decoder_w2 = 0.01*np.random.randn(4,hp.hidden_units,hp.hidden_units)
-decoder_w3 = 0.01*np.random.randn(hp.hidden_units, dff)
-decoder_w4 = 0.01*np.random.randn(dff,hp.hidden_units)
-decoder_w5 = 0.01*np.random.randn(hp.hidden_units,len(en2idx))
-ddecoder_w2 = 0.01*np.random.randn(4,hp.hidden_units,hp.hidden_units)
+decoder_w1 = 0.001*np.random.randn(4,hp.hidden_units,hp.hidden_units)
+decoder_w2 = 0.001*np.random.randn(4,hp.hidden_units,hp.hidden_units)
+decoder_w3 = 0.001*np.random.randn(hp.hidden_units, dff)
+decoder_w4 = 0.001*np.random.randn(dff,hp.hidden_units)
+decoder_w5 = 0.001*np.random.randn(hp.hidden_units,len(en2idx))
+ddecoder_w2 = 0.001*np.random.randn(4,hp.hidden_units,hp.hidden_units)
 decoder_beta1 = np.zeros((hp.hidden_units))
 decoder_gamma1 = np.ones((hp.hidden_units))
 decoder_beta2 = np.zeros((hp.hidden_units))
 decoder_gamma2 = np.ones((hp.hidden_units))
 decoder_beta3 = np.zeros((hp.hidden_units))
 decoder_gamma3 = np.ones((hp.hidden_units))
-lookup_table2 = 0.01*np.random.randn(len(en2idx), hp.hidden_units)
+lookup_table2 = 0.001*np.random.randn(len(en2idx), hp.hidden_units)
 
 for i in range(epoch):
     select = np.random.randint(0,num_samples,hp.batch_size)
@@ -74,24 +74,28 @@ for i in range(epoch):
     decoder7 = feedforward(inputs = encoder6[3], w1 = decoder_w3, w2 = decoder_w4)
     decoder8 = normalize(inputs = decoder7[4], beta=decoder_beta3, gamma = decoder_gamma3)
     scores = np.dot(decoder8[3], decoder_w5)
+    scores[scores>=10] = 10
     exp_scores = np.exp(scores)
+    
     probs = exp_scores/np.sum(exp_scores,axis=-1,keepdims=True)
-    probs[probs==0] = 1e-8
+    print(np.max(scores))
     # Backpropegation   
     # compute the loss: average cross-entropy loss and regularization
     correct_logprobs = -np.log(np.array([probs[j][range(hp.maxlen),y[j]] for j in range(hp.batch_size)]))
     data_loss = np.sum(correct_logprobs)/hp.batch_size
-    reg_loss = 0.5*reg*(np.sum(encoder_w1*encoder_w1) + np.sum(encoder_w2*encoder_w2) + np.sum(encoder_w3*encoder_w3) +
-    np.sum(lookup_table1*lookup_table1) + np.sum(decoder_w1*decoder_w1) + np.sum(decoder_w2*decoder_w2) + np.sum(decoder_w3*decoder_w3) +
-    np.sum(decoder_w4*decoder_w4) + np.sum(decoder_w5*decoder_w5) + np.sum(lookup_table2*lookup_table2))    
-    loss = data_loss + reg_loss
-    print("iteration %d: data_loss %f" % (i, data_loss))
+    #reg_loss = 0.5*reg*(np.sum(encoder_w1*encoder_w1) + np.sum(encoder_w2*encoder_w2) + np.sum(encoder_w3*encoder_w3) +
+    #np.sum(lookup_table1*lookup_table1) + np.sum(decoder_w1*decoder_w1) + np.sum(decoder_w2*decoder_w2) + np.sum(decoder_w3*decoder_w3) +
+    #np.sum(decoder_w4*decoder_w4) + np.sum(decoder_w5*decoder_w5) + np.sum(lookup_table2*lookup_table2))    
+    #loss = data_loss + reg_loss
+    #print("iteration %d: data_loss %f" % (i, reg_loss))
+    print(data_loss)
     # compute the gradient on scores
     dscores = probs
     for j in range(hp.batch_size):
         dscores[j][range(hp.maxlen),y[j]] -=1
     
     dscores /= hp.batch_size
+    dscores[scores>=10] = 0
     ddecoder8 = np.dot(dscores, decoder_w5.T)
     ddecoder_w5 = np.array([np.dot(ddecoder8[j,:,:].T,dscores[j,:,:]) for j in range(hp.batch_size)])
     ddecoder_w5 = np.sum(ddecoder_w5, axis=0)/hp.batch_size
@@ -169,7 +173,7 @@ for i in range(epoch):
     # de_decoder_embedding
     ddecoder1 = ddecoder2
     ddecoder1 = ddecoder1/(hp.hidden_units ** 0.5)
-    lookup_table2[decoder_inputs] += ddecoder1
+    lookup_table2[decoder_inputs] += -ddecoder1
 
     # de_layer normalization
     dencoder5 = de_normalize(encoder_beta2, encoder_gamma2, encoder6[0], encoder6[1], encoder6[2], dencoder6)
@@ -212,10 +216,18 @@ for i in range(epoch):
     # de_encoder_embedding
     dencoder1 = dencoder2
     dencoder1 = dencoder1/(hp.hidden_units ** 0.5)
-    lookup_table1[x] += dencoder1
+    lookup_table1[x] += -dencoder1
 
     # parameter update
     # Encoder parameters
+    dencoder_w1 += reg*encoder_w1
+    dencoder_w2 += reg*encoder_w2
+    dencoder_w3 += reg*encoder_w3
+    dencoder_beta1 += reg*encoder_beta1
+    dencoder_gamma1 += reg*encoder_gamma1
+    dencoder_beta2 += reg*encoder_beta2
+    dencoder_gamma2 += reg*encoder_gamma2
+    
     encoder_w1 += -lr*dencoder_w1
     encoder_w2 += -lr*dencoder_w2
     encoder_w3 += -lr*dencoder_w3
@@ -225,6 +237,18 @@ for i in range(epoch):
     encoder_gamma2 += -lr*dencoder_gamma2
 
     # Decoder parameters
+    ddecoder_w1 += reg*decoder_w1 
+    ddecoder_w2 += reg*decoder_w2
+    ddecoder_w3 += reg*decoder_w3
+    ddecoder_w4 += reg*decoder_w4
+    ddecoder_w5 += reg*decoder_w5 
+    ddecoder_beta1 += reg*decoder_beta1 
+    ddecoder_gamma1 += reg*decoder_gamma1
+    ddecoder_beta2 += reg*decoder_beta2
+    ddecoder_gamma2 += reg*decoder_gamma2
+    ddecoder_beta3 += reg*decoder_beta3
+    ddecoder_gamma3 += reg*decoder_gamma3
+    
     decoder_w1 += -lr*ddecoder_w1 
     decoder_w2 += -lr*ddecoder_w2
     decoder_w3 += -lr*ddecoder_w3
