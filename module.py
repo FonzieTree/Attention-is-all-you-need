@@ -3,7 +3,6 @@
 # fangshuming519@gmail.com.
 # https://github.com/FonzieTree
 # -*- coding: utf-8 -*-
-# -*- coding: utf-8 -*-
 import numpy as np
 from hyperparams import Hyperparams as hp
 def normalize(inputs, 
