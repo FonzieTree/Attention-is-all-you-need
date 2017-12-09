@@ -25,6 +25,8 @@ def de_normalize(beta,
     dinputs = mean + ((variance + 1e-8)**.5)*(outputs - beta)/gamma
     dgamma = (outputs - beta)/normalized
     dbeta = (outputs - gamma * normalized)
+    dgamma = np.sum(dgamma, axis = (0,1))/(dgamma.shape[0]*dgamma.shape[1])
+    dbeta= np.sum(dbeta, axis = (0,1))/(dbeta.shape[0]*dbeta.shape[1])
     return [dbeta, dgamma, dinputs]
 
 def embedding(inputs, 
@@ -81,7 +83,7 @@ def multihead_attention(queries,
     # Scale
     outputs2 = outputs1/(K.shape[1]** 0.5)
     # SoftMax
-    index = np.argwhere(outputs2<=0)
+    index = (outputs2<=0)
     outputs3 = np.maximum(0,outputs2)
     outputs4 = np.array([np.dot(outputs3[i,:,:], V[i,:,:]) for i in range(hp.batch_size)])
     outputs5 = np.array([np.dot(outputs4[i,:,:], attention_w[3,:,:]) for i in range(hp.batch_size)])
@@ -93,35 +95,37 @@ def de_multihead_attention(index, outputs1, outputs2, outputs3,  outputs4,  outp
     dattention_w = np.zeros((attention_w.shape)) 
     doutputs5 = outputs
     doutputs4 = np.array([np.dot(doutputs5[i,:,:], dattention_w[3,:,:].T) for i in range(hp.batch_size)])
-    dattention_w[3, :, :] = np.array([np.dot(outputs4[i,:,:].T, doutputs5[i,:,:]) for i in range(hp.batch_size)])/hp.batch_size
-    dattention_w[3, :, :] = np.sum(dattention_w[3, :, :], axis = 0)
     dV = np.array([np.dot(outputs3[i,:,:].T, doutputs4[i,:,:]) for i in range(hp.batch_size)])
     doutputs3 = np.array([np.dot(doutputs4[i,:,:], V[i, :, :].T) for i in range(hp.batch_size)])
-    doutputs2 = doutputs3[index]
-    doutputs1 = doutputs2(K.shape[1]** 0.5)
-    dQ = np.array([np.dot(doutputs1, K[i,:,:]) for i in range(hp.batch_size)])
-    dK = np.array([np.dot(Q.T, doutputs1).T for i in range(hp.batch_size)])
+    doutputs3[index] = 0
+    doutputs2 = doutputs3
+    doutputs1 = doutputs2*(K.shape[1]** 0.5)
+    dQ = np.array([np.dot(doutputs1[i, :, :], K[i,:,:]) for i in range(hp.batch_size)])
+    dK = np.array([np.dot(Q[i, :, :].T, doutputs1[i, :, :]).T for i in range(hp.batch_size)])
     dqueries = np.dot(dQ, attention_w[0, :, :].T)
-    dkeys = (np.dot(dK, attention[1, :, :]) + np.dot(dV, attention[2, :, :]))/2
-    dattention_w[0, :, :] = np.array([np.dot(queries[i, :, :].T, Q[i, :, :]) for i in range(hp.batch_size)])/hp.batch_size
-    dattention_w[0, :, :] = np.sum(dattention_w[0, :, :], axis = 0)
-    dattention_w[1, :, :] = np.array([np.dot(keys[i, :, :].T, K[i, :, :]) for i in range(hp.batch_size)])/hp.batch_size
-    dattention_w[1, :, :] = np.sum(dattention_w[1, :, :], axis = 0)
-    dattention_w[2, :, :] = np.array([np.dot(keys[i, :, :].T, V[i, :, :]) for i in range(hp.batch_size)])/hp.batch_size
-    dattention_w[2, :, :] = np.sum(dattention_w[2, :, :], axis = 0)
-    return [dqueris, dkeys, dattention_w]
+    dkeys = (np.dot(dK, attention_w[1, :, :]) + np.dot(dV, attention_w[2, :, :]))/2
+    d0 = np.array([np.dot(queries[i, :, :].T, Q[i, :, :]) for i in range(hp.batch_size)])/hp.batch_size
+    dattention_w[0, :, :] = np.sum(d0, axis = 0)
+    d1 = np.array([np.dot(keys[i, :, :].T, K[i, :, :]) for i in range(hp.batch_size)])/hp.batch_size
+    dattention_w[1, :, :] = np.sum(d1, axis = 0)
+    d2 = np.array([np.dot(keys[i, :, :].T, V[i, :, :]) for i in range(hp.batch_size)])/hp.batch_size
+    dattention_w[2, :, :] = np.sum(d2, axis = 0)
+    d3 = np.array([np.dot(outputs4[i,:,:].T, doutputs5[i,:,:]) for i in range(hp.batch_size)])/hp.batch_size
+    dattention_w[3, :, :] = np.sum(d3, axis = 0)
+    return [dqueries, dkeys, dattention_w]
 
 def feedforward(inputs,
                 w1,
                 w2):
     outputs1 = np.dot(inputs,w1)
-    index = outputs1<=0
+    index = (outputs1<=0)
     outputs2 = np.maximum(0,outputs1)
     outputs3 = np.dot(outputs2,w2)
     outputs4 = outputs3 + inputs    
     return [index, outputs1, outputs2, outputs3, outputs4]
 
-def backward(w1,
+def backward(inputs,
+             w1,
 	     w2,
              index,
              outputs1,
@@ -130,13 +134,17 @@ def backward(w1,
              outputs):
     doutputs3 = outputs
     doutputs2 = np.dot(doutputs3, w2.T)
+    
     dw2 = np.array([np.dot(outputs2[i, :, :].T, doutputs3[i, :, :]) for i in range(hp.batch_size)])/hp.batch_size
     dw2 = np.sum(dw2, axis = 0)
     doutputs2[index] = 0
-    doutputs1 = np.dot(doutputs2,w1.T)
-    dw1 = np.dot(doutputs1, inputs)
+    doutputs1 = doutputs2
+    
+    dw1 = np.array([np.dot(inputs[i, :, :].T, doutputs1[i, :, :]) for i in range(hp.batch_size)])/hp.batch_size
+    dw1 = np.sum(dw1, axis = 0)
+    
     dinputs = np.dot(doutputs1, w1.T)
-    dinputs = dinputs + doutputs
+    dinputs = dinputs + outputs
     return [dw1, dw2, dinputs]
 
 def label_smoothing(inputs, epsilon=0.1):
