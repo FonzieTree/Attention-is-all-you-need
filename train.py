@@ -9,7 +9,7 @@ from data_load import load_train_data, get_batch_data, load_de_vocab, load_en_vo
 import os, codecs
 from tqdm import tqdm
 import numpy as np
-from modules2 import *
+from modules import *
 np.random.seed(0)
 
 print('loading vocabulary...')
