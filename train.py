@@ -22,23 +22,22 @@ num_samples = X.shape[0]
 dff = 2048 # dimention of inner layer
 # Some hyperparameters
 reg = 0.1 # regularization strength
-epoch = 2
-lr = 0.001
-
+epoch = 50000
+lr = 0.000001
 # Encoder parameters
-encoder_w1 = 0.01*np.random.randn(4,hp.hidden_units,hp.hidden_units)
-encoder_w2 = 0.01*np.random.randn(1,dff)
-encoder_w3 = 0.01*np.random.randn(1,hp.hidden_units)
+encoder_w1 = 0.001*np.random.randn(4,hp.hidden_units,hp.hidden_units)
+encoder_w2 = 0.001*np.random.randn(1,dff)
+encoder_w3 = 0.001*np.random.randn(1,hp.hidden_units)
 lookup_table1 = np.random.randn(len(de2idx), hp.hidden_units)
 # Decoder parameters
-decoder_w1 = 0.01*np.random.randn(4,hp.hidden_units,hp.hidden_units)
-decoder_w2 = 0.01*np.random.randn(4,hp.hidden_units,hp.hidden_units)
-decoder_w3 = 0.01*np.random.randn(1,dff)
-decoder_w4 = 0.01*np.random.randn(1,hp.hidden_units)
-decoder_w5 = 0.01*np.random.randn(hp.hidden_units,len(en2idx))
+decoder_w1 = 0.001*np.random.randn(4,hp.hidden_units,hp.hidden_units)
+decoder_w2 = 0.001*np.random.randn(4,hp.hidden_units,hp.hidden_units)
+decoder_w3 = 0.001*np.random.randn(1,dff)
+decoder_w4 = 0.001*np.random.randn(1,hp.hidden_units)
+decoder_w5 = 0.001*np.random.randn(hp.hidden_units,len(en2idx))
 lookup_table2 = np.random.randn(len(en2idx), hp.hidden_units)
 
-for i in range(1):
+for i in range(epoch):
     select = np.random.randint(0,num_samples,hp.batch_size)
     x = X[select, :]
     y = Y[select, :]
@@ -66,7 +65,6 @@ for i in range(1):
     #scores = label_smoothing(scores)
     exp_scores = np.exp(scores)
     probs = exp_scores/np.sum(exp_scores,axis=-1,keepdims=True)
-    print(np.max(scores))
     # Backpropegation   
     # compute the loss: average cross-entropy loss and regularization
     correct_logprobs = -np.log(np.array([probs[j][range(hp.maxlen),y[j]] for j in range(hp.batch_size)]))
@@ -76,7 +74,6 @@ for i in range(1):
     #np.sum(decoder_w4*decoder_w4) + np.sum(decoder_w5*decoder_w5) + np.sum(lookup_table2*lookup_table2))    
     #loss = data_loss + reg_loss
     #print("iteration %d: data_loss %f" % (i, reg_loss))
-    print(data_loss)
     # compute the gradient on scores
     dscores = probs
     for j in range(hp.batch_size):
@@ -203,5 +200,4 @@ for i in range(1):
     decoder_w3 += -lr*ddecoder_w3
     decoder_w4 += -lr*ddecoder_w4
     decoder_w5 += -lr*ddecoder_w5
-
-    print(i, ' round finished')
+    print('Loss : ', data_loss, ' in round ', i)
