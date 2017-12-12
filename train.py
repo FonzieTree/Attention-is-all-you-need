@@ -3,13 +3,12 @@
 # fangshuming519@gmail.com.
 # https://github.com/FonzieTree
 from __future__ import print_function
-import os
 from hyperparams import Hyperparams as hp
 from data_load import load_train_data, get_batch_data, load_de_vocab, load_en_vocab
 import os, codecs
 from tqdm import tqdm
 import numpy as np
-from modules import *
+from modules2 import *
 np.random.seed(0)
 
 print('loading vocabulary...')
