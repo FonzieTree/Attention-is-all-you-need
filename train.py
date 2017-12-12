@@ -3,6 +3,7 @@
 # fangshuming519@gmail.com.
 # https://github.com/FonzieTree
 from __future__ import print_function
+import os
 from hyperparams import Hyperparams as hp
 from data_load import load_train_data, get_batch_data, load_de_vocab, load_en_vocab
 import os, codecs
@@ -10,6 +11,7 @@ from tqdm import tqdm
 import numpy as np
 from modules2 import *
 np.random.seed(0)
+
 print('loading vocabulary...')
 de2idx, idx2de = load_de_vocab()
 en2idx, idx2en = load_en_vocab()
@@ -21,23 +23,23 @@ num_samples = X.shape[0]
 dff = 2048 # dimention of inner layer
 # Some hyperparameters
 reg = 0.1 # regularization strength
-epoch = 10000
-lr = 0.0000001
+epoch = 2
+lr = 0.001
 
 # Encoder parameters
-encoder_w1 = 0.001*np.random.randn(4,hp.hidden_units,hp.hidden_units)
-encoder_w2 = 0.001*np.random.randn(1,dff)
-encoder_w3 = 0.001*np.random.randn(1,hp.hidden_units)
-lookup_table1 = 0.001*np.random.randn(len(de2idx), hp.hidden_units)
+encoder_w1 = 0.01*np.random.randn(4,hp.hidden_units,hp.hidden_units)
+encoder_w2 = 0.01*np.random.randn(1,dff)
+encoder_w3 = 0.01*np.random.randn(1,hp.hidden_units)
+lookup_table1 = np.random.randn(len(de2idx), hp.hidden_units)
 # Decoder parameters
-decoder_w1 = 0.001*np.random.randn(4,hp.hidden_units,hp.hidden_units)
-decoder_w2 = 0.001*np.random.randn(4,hp.hidden_units,hp.hidden_units)
-decoder_w3 = 0.001*np.random.randn(1,dff)
-decoder_w4 = 0.001*np.random.randn(1,hp.hidden_units)
-decoder_w5 = 0.001*np.random.randn(hp.hidden_units,len(en2idx))
-lookup_table2 = 0.001*np.random.randn(len(en2idx), hp.hidden_units)
+decoder_w1 = 0.01*np.random.randn(4,hp.hidden_units,hp.hidden_units)
+decoder_w2 = 0.01*np.random.randn(4,hp.hidden_units,hp.hidden_units)
+decoder_w3 = 0.01*np.random.randn(1,dff)
+decoder_w4 = 0.01*np.random.randn(1,hp.hidden_units)
+decoder_w5 = 0.01*np.random.randn(hp.hidden_units,len(en2idx))
+lookup_table2 = np.random.randn(len(en2idx), hp.hidden_units)
 
-for i in range(epoch):
+for i in range(1):
     select = np.random.randint(0,num_samples,hp.batch_size)
     x = X[select, :]
     y = Y[select, :]
@@ -48,7 +50,7 @@ for i in range(epoch):
     encoder2 = encoder1 + position_encoder
     encoder3 = multihead_attention(queries=encoder2,keys=encoder2,attention_w=encoder_w1)
     encoder4 = normalize(inputs = encoder3[5])
-    encoder5 = feedforward(encoder4[2],encoder_w2,encoder_w3)
+    encoder5 = feedforward(inputs = encoder4[2], w1 = encoder_w2, w2 = encoder_w3)
     encoder6 = normalize(encoder5[4])
     # Decoder
     decoder_inputs = np.concatenate((np.ones((hp.batch_size,1), dtype=int)*2, y[:,:-1]), axis=1) # 2:<S>
@@ -81,7 +83,6 @@ for i in range(epoch):
     for j in range(hp.batch_size):
         dscores[j][range(hp.maxlen),y[j]] -=1
     
-    dscores /= hp.batch_size
     ddecoder8 = np.dot(dscores, decoder_w5.T)
     ddecoder_w5 = np.array([np.dot(decoder8[2][j,:,:].T,dscores[j,:,:]) for j in range(hp.batch_size)])
     ddecoder_w5 = np.sum(ddecoder_w5, axis=0)/hp.batch_size
@@ -120,7 +121,7 @@ for i in range(epoch):
                                      keys = decoder5[10], 
 				     attention_w = decoder_w2)
     ddecoder4 = dmulti3[0]
-    dencoder6 = dmulti3[1]
+    dencoder6 = dmulti3[1]/2
     ddecoder_w2 = dmulti3[2]
 
     # de_layer normalization
@@ -142,13 +143,13 @@ for i in range(epoch):
                                      queries = decoder3[9],
                                      keys = decoder3[10],
 				     attention_w = decoder_w1)
-    ddecoder2 = (dmulti2[0] + dmulti2[1])/2
+    ddecoder2 = (dmulti2[0] + dmulti2[1])/3
     ddecoder_w1 = dmulti2[2]
 
     # de_decoder_embedding
     ddecoder1 = ddecoder2
     ddecoder1 = ddecoder1/(hp.hidden_units ** 0.5)
-    lookup_table2[decoder_inputs] += -lr*ddecoder1
+    lookup_table2[decoder_inputs][1:,:] += -lr*ddecoder1[1:,:]
 
     # de_layer normalization
     dencoder5 = de_normalize(encoder6[0], encoder6[1], dencoder6)
@@ -182,12 +183,12 @@ for i in range(epoch):
                                      queries = encoder3[9],
                                      keys = encoder3[10],
 				     attention_w = encoder_w1)
-    dencoder2 = (dmulti1[0] + dmulti1[1])/2
+    dencoder2 = (dmulti1[0] + dmulti1[1])/3
     dencoder_w1 = dmulti1[2]
     # de_encoder_embedding
     dencoder1 = dencoder2
     dencoder1 = dencoder1/(hp.hidden_units ** 0.5)
-    lookup_table1[x] += -lr*dencoder1
+    lookup_table1[x][1:,:] += -lr*dencoder1[1:,:]
 
     # parameter update
     # Encoder parameters
