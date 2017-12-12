@@ -90,13 +90,13 @@ def de_multihead_attention(outputs1, outputs2, outputs5, outputs6, outputs7, out
     doutputs6 = np.array([np.dot(doutputs7[i,:,:], attention_w[3,:,:].T) for i in range(hp.batch_size)])
     dV = np.array([np.dot(outputs5[i,:,:].T, doutputs6[i,:,:]) for i in range(hp.batch_size)])
     doutputs5 = np.array([np.dot(doutputs6[i,:,:], V[i, :, :].T) for i in range(hp.batch_size)])
-    doutputs2 = doutputs5/(hp.batch_size*hp.maxlen)
+    doutputs2 = doutputs5
     doutputs2[outputs2==0] = 0
     doutputs1 = doutputs2 * (K.shape[2]** 0.5)
     dQ = np.array([np.dot(doutputs1[i, :, :], K[i,:,:]) for i in range(hp.batch_size)])
     dK = np.array([np.dot(Q[i, :, :].T, doutputs1[i, :, :]).T for i in range(hp.batch_size)])
     dqueries = np.dot(dQ, attention_w[0, :, :].T) + outputs
-    dkeys = (np.dot(dK, attention_w[1, :, :]) + np.dot(dV, attention_w[2, :, :]))/2
+    dkeys = np.dot(dK, attention_w[1, :, :]) + np.dot(dV, attention_w[2, :, :])
     d0 = np.array([np.dot(queries[i, :, :].T, Q[i, :, :]) for i in range(hp.batch_size)])/hp.batch_size
     dattention_w[0, :, :] = np.sum(d0, axis = 0)
     d1 = np.array([np.dot(keys[i, :, :].T, K[i, :, :]) for i in range(hp.batch_size)])/hp.batch_size
@@ -110,9 +110,11 @@ def de_multihead_attention(outputs1, outputs2, outputs5, outputs6, outputs7, out
 def feedforward(inputs,
                 w1,
                 w2):
+    inputs[inputs<0] = 0
     outputs1 = np.dot(inputs,np.tile(w1,(512,1)))
-    index = (outputs1<=0)
-    outputs2 = np.maximum(0,outputs1)
+    index = (outputs1<0)
+    outputs1[index] = 0
+    outputs2 = outputs1
     outputs3 = np.dot(outputs2,np.tile(w2,(2048,1)))
     outputs4 = outputs3 + inputs
     return [index, outputs1, outputs2, outputs3, outputs4]
@@ -130,16 +132,11 @@ def backward(inputs,
     
     dw2 = np.array([np.dot(outputs2[i, :, :].T, doutputs3[i, :, :]) for i in range(hp.batch_size)])
     dw2 = np.sum(dw2, axis = (0,1))/(hp.batch_size*2048)
-    doutputs2[index] = 0
     doutputs1 = doutputs2
-    
+    doutputs1[index] = 0
     dw1 = np.array([np.dot(inputs[i, :, :].T, doutputs1[i, :, :]) for i in range(hp.batch_size)])
     dw1 = np.sum(dw1, axis = (0,1))/(hp.batch_size*512)
-    
     dinputs = np.dot(doutputs1, np.tile(w1, (512,1)).T)
+    dinputs[inputs<0] = 0
     dinputs = dinputs + outputs
     return [dw1, dw2, dinputs]
-
-    
-
-            
