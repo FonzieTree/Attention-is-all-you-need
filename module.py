@@ -24,7 +24,7 @@ def embedding(inputs,
               lookup_table, 
               num_units, 
               zero_pad=True, 
-              scale=False,
+              scale=True,
               reuse=None):
     if zero_pad:
         lookup_table = np.concatenate((np.zeros((1,num_units), dtype=int), lookup_table[1:,:]), axis=0) 
@@ -39,7 +39,7 @@ def embedding(inputs,
 def positional_encoding(inputs,
                         num_units,
                         zero_pad=True,
-                        scale=False):
+                        scale=True):
     N, T = inputs.shape
     position_ind = np.tile(np.array(range(T)),(N,1))
 
@@ -52,7 +52,7 @@ def positional_encoding(inputs,
     position_enc[:, 1::2] = np.cos(position_enc[:, 1::2])  # dim 2i+1
 
     # Convert to a tensor
-    lookup_table = position_enc
+    lookup_table = 0.0001*position_enc
 
     if zero_pad:
         lookup_table = np.concatenate((np.zeros((1,num_units), dtype=int), lookup_table[1:,:]), axis=0)
@@ -140,3 +140,7 @@ def backward(inputs,
     dinputs[inputs<0] = 0
     dinputs = dinputs + outputs
     return [dw1, dw2, dinputs]
+
+    
+
+            
