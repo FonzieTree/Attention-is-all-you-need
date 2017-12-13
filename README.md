@@ -12,10 +12,10 @@ The preprocess is quoted from others' project. But as you can see, the deeplearn
 Training process:
 
 Loss :  38.96563723  in round  548                                                                                                       
-pred : [15  3  3  3  3  3  1  3  0  0]                                                                                                     
+pred : [15  3  3  3  3  3  1  3  0  0]                                                                                                   
 truth : [1173  732   35    5  718    8 3735    3    0    0]                                       
-pred : [15  3  3  3  3  3  3  3  3  0]                                                                                                     
-truth : [120 807   5  29 143  91   5  77   3   0]                                                 
+pred : [15  3  3  3  3  3  3  3  3  0]                                                                                                   
+truth : [120 807   5  29 143  91   5  77   3   0]                                                                                       
 pred : [15  3  8  1  3  0  0  0  0  0]
 truth : [11 21  8  1  3  0  0  0  0  0]                                                                                                                         
 pred : [15  3  3  3  1  3  0  0  0  0]                                                                                                     
