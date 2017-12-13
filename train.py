@@ -6,11 +6,9 @@ from __future__ import print_function
 from hyperparams import Hyperparams as hp
 from data_load import load_train_data, get_batch_data, load_de_vocab, load_en_vocab
 import os, codecs
-from tqdm import tqdm
 import numpy as np
-from modules2 import *
+from modules import *
 np.random.seed(0)
-
 print('loading vocabulary...')
 de2idx, idx2de = load_de_vocab()
 en2idx, idx2en = load_en_vocab()
@@ -22,20 +20,20 @@ num_samples = X.shape[0]
 dff = 2048 # dimention of inner layer
 # Some hyperparameters
 reg = 0.1 # regularization strength
-epoch = 50000
-lr = 0.000001
+epoch = 200
+lr = 0.01
 # Encoder parameters
-encoder_w1 = 0.001*np.random.randn(4,hp.hidden_units,hp.hidden_units)
-encoder_w2 = 0.001*np.random.randn(1,dff)
-encoder_w3 = 0.001*np.random.randn(1,hp.hidden_units)
-lookup_table1 = np.random.randn(len(de2idx), hp.hidden_units)
+encoder_w1 = 0.0001*np.random.randn(4,hp.hidden_units,hp.hidden_units)
+encoder_w2 = 0.0001*np.random.randn(1,dff)
+encoder_w3 = 0.0001*np.random.randn(1,hp.hidden_units)
+lookup_table1 = 0.0001*np.random.randn(len(de2idx), hp.hidden_units)
 # Decoder parameters
-decoder_w1 = 0.001*np.random.randn(4,hp.hidden_units,hp.hidden_units)
-decoder_w2 = 0.001*np.random.randn(4,hp.hidden_units,hp.hidden_units)
-decoder_w3 = 0.001*np.random.randn(1,dff)
-decoder_w4 = 0.001*np.random.randn(1,hp.hidden_units)
-decoder_w5 = 0.001*np.random.randn(hp.hidden_units,len(en2idx))
-lookup_table2 = np.random.randn(len(en2idx), hp.hidden_units)
+decoder_w1 = 0.0001*np.random.randn(4,hp.hidden_units,hp.hidden_units)
+decoder_w2 = 0.0001*np.random.randn(4,hp.hidden_units,hp.hidden_units)
+decoder_w3 = 0.0001*np.random.randn(1,dff)
+decoder_w4 = 0.0001*np.random.randn(1,hp.hidden_units)
+decoder_w5 = 0.0001*np.random.randn(hp.hidden_units,len(en2idx))
+lookup_table2 = 0.0001*np.random.randn(len(en2idx), hp.hidden_units)
 
 for i in range(epoch):
     select = np.random.randint(0,num_samples,hp.batch_size)
@@ -200,4 +198,4 @@ for i in range(epoch):
     decoder_w3 += -lr*ddecoder_w3
     decoder_w4 += -lr*ddecoder_w4
     decoder_w5 += -lr*ddecoder_w5
-    print('Loss : ', data_loss, ' in round ', i)
+    print('round: ',i, '  data loss: ', data_loss)
