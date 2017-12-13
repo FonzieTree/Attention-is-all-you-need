@@ -10,7 +10,7 @@ Why This Project?
 The preprocess is quoted from others' project. But as you can see, the deeplearning part of attention only use numpy!!!  If you are interested in write deeplearning piplines from scratch, and wanna to join me, please let me know, my email is fangshuming519@gmail.com
 
 Training process:
-Loss :  38.96563723  in round  548
+Loss :  38.96563723  in round  548                                                                                                         
 pred1
 [15  3  3  3  3  3  1  3  0  0] 
 y1
