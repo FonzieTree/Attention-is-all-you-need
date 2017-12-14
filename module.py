@@ -1,8 +1,3 @@
-# This project is inspired by https://www.github.com/kyubyong/tacotron
-# December 2017 by Shuming Fang. 
-# fangshuming519@gmail.com.
-# https://github.com/FonzieTree
-# -*- coding: utf-8 -*-
 import numpy as np
 from hyperparams import Hyperparams as hp
 def normalize(inputs):
@@ -52,7 +47,7 @@ def positional_encoding(inputs,
     position_enc[:, 1::2] = np.cos(position_enc[:, 1::2])  # dim 2i+1
 
     # Convert to a tensor
-    lookup_table = 0.0001*position_enc
+    lookup_table = 0.0005*position_enc
 
     if zero_pad:
         lookup_table = np.concatenate((np.zeros((1,num_units), dtype=int), lookup_table[1:,:]), axis=0)
@@ -76,8 +71,8 @@ def multihead_attention(queries,
     outputs2[outputs2==0] = -2**32 + 1
     # SoftMax
     outputs3 = np.exp(outputs2)
-    outputs4 = np.sum(outputs3,axis=(1))
-    outputs5 = np.array([outputs3[i,:,:]/outputs4[i,:] for i in range(hp.batch_size)])
+    outputs4 = np.sum(outputs3,axis=2)
+    outputs5 = np.array([outputs3[i,:,:]/outputs4[i,:].reshape(10,1) for i in range(hp.batch_size)])
     outputs6 = np.array([np.dot(outputs5[i,:,:], V[i,:,:]) for i in range(hp.batch_size)])
     outputs7 = np.array([np.dot(outputs6[i,:,:], attention_w[3,:,:]) for i in range(hp.batch_size)])
     # Add residual connections
@@ -140,7 +135,3 @@ def backward(inputs,
     dinputs[inputs<0] = 0
     dinputs = dinputs + outputs
     return [dw1, dw2, dinputs]
-
-    
-
-            
