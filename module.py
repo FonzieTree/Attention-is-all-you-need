@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import numpy as np
 from hyperparams import Hyperparams as hp
 def normalize(inputs):
@@ -47,7 +48,7 @@ def positional_encoding(inputs,
     position_enc[:, 1::2] = np.cos(position_enc[:, 1::2])  # dim 2i+1
 
     # Convert to a tensor
-    lookup_table = 0.0005*position_enc
+    lookup_table = 0.00001*position_enc
 
     if zero_pad:
         lookup_table = np.concatenate((np.zeros((1,num_units), dtype=int), lookup_table[1:,:]), axis=0)
