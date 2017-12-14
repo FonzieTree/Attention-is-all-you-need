@@ -1,13 +1,9 @@
-# This project is inspired by https://www.github.com/kyubyong/tacotron
-# December 2017 by Shuming Fang. 
-# fangshuming519@gmail.com.
-# https://github.com/FonzieTree
 from __future__ import print_function
 from hyperparams import Hyperparams as hp
 from data_load import load_train_data, get_batch_data, load_de_vocab, load_en_vocab
 import os, codecs
 import numpy as np
-from modules import *
+from modules2 import *
 np.random.seed(0)
 print('loading vocabulary...')
 de2idx, idx2de = load_de_vocab()
@@ -20,25 +16,26 @@ num_samples = X.shape[0]
 dff = 2048 # dimention of inner layer
 # Some hyperparameters
 reg = 0.1 # regularization strength
-epoch = 200
-lr = 0.01
+epoch = 10000
+lr = 0.001
 # Encoder parameters
-encoder_w1 = 0.0001*np.random.randn(4,hp.hidden_units,hp.hidden_units)
-encoder_w2 = 0.0001*np.random.randn(1,dff)
-encoder_w3 = 0.0001*np.random.randn(1,hp.hidden_units)
-lookup_table1 = 0.0001*np.random.randn(len(de2idx), hp.hidden_units)
+encoder_w1 = 0.0005*np.random.randn(4,hp.hidden_units,hp.hidden_units)
+encoder_w2 = 0.0005*np.random.randn(1,dff)
+encoder_w3 = 0.0005*np.random.randn(1,hp.hidden_units)
+lookup_table1 = 0.0005*np.random.randn(len(de2idx), hp.hidden_units)
 # Decoder parameters
-decoder_w1 = 0.0001*np.random.randn(4,hp.hidden_units,hp.hidden_units)
-decoder_w2 = 0.0001*np.random.randn(4,hp.hidden_units,hp.hidden_units)
-decoder_w3 = 0.0001*np.random.randn(1,dff)
-decoder_w4 = 0.0001*np.random.randn(1,hp.hidden_units)
-decoder_w5 = 0.0001*np.random.randn(hp.hidden_units,len(en2idx))
-lookup_table2 = 0.0001*np.random.randn(len(en2idx), hp.hidden_units)
+decoder_w1 = 0.0005*np.random.randn(4,hp.hidden_units,hp.hidden_units)
+decoder_w2 = 0.0005*np.random.randn(4,hp.hidden_units,hp.hidden_units)
+decoder_w3 = 0.0005*np.random.randn(1,dff)
+decoder_w4 = 0.0005*np.random.randn(1,hp.hidden_units)
+decoder_w5 = 0.0005*np.random.randn(hp.hidden_units,len(en2idx))
+lookup_table2 = 0.0005*np.random.randn(len(en2idx), hp.hidden_units)
 
 for i in range(epoch):
     select = np.random.randint(0,num_samples,hp.batch_size)
     x = X[select, :]
     y = Y[select, :]
+    y =  np.concatenate((np.ones((hp.batch_size,1), dtype=int)*2, y[:,:-1]), axis=1) # 2:<S>
     # Forward path
     # Encoder
     encoder1 = embedding(x,lookup_table1,num_units=hp.hidden_units,scale=True)
@@ -198,4 +195,7 @@ for i in range(epoch):
     decoder_w3 += -lr*ddecoder_w3
     decoder_w4 += -lr*ddecoder_w4
     decoder_w5 += -lr*ddecoder_w5
+    pred = np.argmax(scores,axis=2)
+    print(pred[0],y[0])
+    print(pred[1],y[1])
     print('round: ',i, '  data loss: ', data_loss)
