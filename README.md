@@ -9,6 +9,10 @@ Why This Project?
 
 The preprocess is quoted from others' project. But as you can see, the deeplearning part of attention only use numpy!!!  If you are interested in write deeplearning piplines from scratch, and wanna to join me, please let me know, my email is fangshuming519@gmail.com
 
+I took a mini batch for example, select = np.array([ 2732, 43567]).
+
+After 300 round of training, the model can exactly do translation in this mini batch.
+
 Training process:
 
 loading vocabulary...
