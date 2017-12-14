@@ -3,7 +3,7 @@ from hyperparams import Hyperparams as hp
 from data_load import load_train_data, get_batch_data, load_de_vocab, load_en_vocab
 import os, codecs
 import numpy as np
-from modules2 import *
+from modules import *
 np.random.seed(0)
 print('loading vocabulary...')
 de2idx, idx2de = load_de_vocab()
@@ -35,7 +35,6 @@ for i in range(epoch):
     select = np.random.randint(0,num_samples,hp.batch_size)
     x = X[select, :]
     y = Y[select, :]
-    y =  np.concatenate((np.ones((hp.batch_size,1), dtype=int)*2, y[:,:-1]), axis=1) # 2:<S>
     # Forward path
     # Encoder
     encoder1 = embedding(x,lookup_table1,num_units=hp.hidden_units,scale=True)
