@@ -1,6 +1,9 @@
+# December 2017 by Shuming Fang. 
+# fangshuming519@gmail.com.
+# https://github.com/FonzieTree
 # -*- coding: utf-8 -*-
 import numpy as np
-from hyperparams import Hyperparams as hp
+batch_size = 2
 def normalize(inputs):
     # Layer mean
     params_shape = inputs.shape[-1]
@@ -48,7 +51,7 @@ def positional_encoding(inputs,
     position_enc[:, 1::2] = np.cos(position_enc[:, 1::2])  # dim 2i+1
 
     # Convert to a tensor
-    lookup_table = 0.00001*position_enc
+    lookup_table = 0.0005*position_enc
 
     if zero_pad:
         lookup_table = np.concatenate((np.zeros((1,num_units), dtype=int), lookup_table[1:,:]), axis=0)
@@ -66,16 +69,16 @@ def multihead_attention(queries,
     K = np.dot(keys, attention_w[1,:,:])
     V = np.dot(keys, attention_w[2,:,:])
     # Multiplication
-    outputs1 = np.array([np.dot(Q[i,:,:], K[i,:,:].T) for i in range(hp.batch_size)])
+    outputs1 = np.array([np.dot(Q[i,:,:], K[i,:,:].T) for i in range(batch_size)])
     # Scale
     outputs2 = outputs1/(K.shape[2]** 0.5)
     outputs2[outputs2==0] = -2**32 + 1
     # SoftMax
     outputs3 = np.exp(outputs2)
     outputs4 = np.sum(outputs3,axis=2)
-    outputs5 = np.array([outputs3[i,:,:]/outputs4[i,:].reshape(10,1) for i in range(hp.batch_size)])
-    outputs6 = np.array([np.dot(outputs5[i,:,:], V[i,:,:]) for i in range(hp.batch_size)])
-    outputs7 = np.array([np.dot(outputs6[i,:,:], attention_w[3,:,:]) for i in range(hp.batch_size)])
+    outputs5 = np.array([outputs3[i,:,:]/outputs4[i,:].reshape(10,1) for i in range(batch_size)])
+    outputs6 = np.array([np.dot(outputs5[i,:,:], V[i,:,:]) for i in range(batch_size)])
+    outputs7 = np.array([np.dot(outputs6[i,:,:], attention_w[3,:,:]) for i in range(batch_size)])
     # Add residual connections
     outputs8 = outputs7 + queries
     return [outputs1, outputs2, outputs5,  outputs6, outputs7, outputs8, Q, K, V, queries, keys]
@@ -83,23 +86,23 @@ def multihead_attention(queries,
 def de_multihead_attention(outputs1, outputs2, outputs5, outputs6, outputs7, outputs, Q, K, V, queries, keys, attention_w):
     dattention_w = np.zeros((attention_w.shape)) 
     doutputs7 = outputs
-    doutputs6 = np.array([np.dot(doutputs7[i,:,:], attention_w[3,:,:].T) for i in range(hp.batch_size)])
-    dV = np.array([np.dot(outputs5[i,:,:].T, doutputs6[i,:,:]) for i in range(hp.batch_size)])
-    doutputs5 = np.array([np.dot(doutputs6[i,:,:], V[i, :, :].T) for i in range(hp.batch_size)])
+    doutputs6 = np.array([np.dot(doutputs7[i,:,:], attention_w[3,:,:].T) for i in range(batch_size)])
+    dV = np.array([np.dot(outputs5[i,:,:].T, doutputs6[i,:,:]) for i in range(batch_size)])
+    doutputs5 = np.array([np.dot(doutputs6[i,:,:], V[i, :, :].T) for i in range(batch_size)])
     doutputs2 = doutputs5
     doutputs2[outputs2==0] = 0
     doutputs1 = doutputs2 * (K.shape[2]** 0.5)
-    dQ = np.array([np.dot(doutputs1[i, :, :], K[i,:,:]) for i in range(hp.batch_size)])
-    dK = np.array([np.dot(Q[i, :, :].T, doutputs1[i, :, :]).T for i in range(hp.batch_size)])
+    dQ = np.array([np.dot(doutputs1[i, :, :], K[i,:,:]) for i in range(batch_size)])
+    dK = np.array([np.dot(Q[i, :, :].T, doutputs1[i, :, :]).T for i in range(batch_size)])
     dqueries = np.dot(dQ, attention_w[0, :, :].T) + outputs
     dkeys = np.dot(dK, attention_w[1, :, :]) + np.dot(dV, attention_w[2, :, :])
-    d0 = np.array([np.dot(queries[i, :, :].T, Q[i, :, :]) for i in range(hp.batch_size)])/hp.batch_size
+    d0 = np.array([np.dot(queries[i, :, :].T, Q[i, :, :]) for i in range(batch_size)])/batch_size
     dattention_w[0, :, :] = np.sum(d0, axis = 0)
-    d1 = np.array([np.dot(keys[i, :, :].T, K[i, :, :]) for i in range(hp.batch_size)])/hp.batch_size
+    d1 = np.array([np.dot(keys[i, :, :].T, K[i, :, :]) for i in range(batch_size)])/batch_size
     dattention_w[1, :, :] = np.sum(d1, axis = 0)
-    d2 = np.array([np.dot(keys[i, :, :].T, V[i, :, :]) for i in range(hp.batch_size)])/hp.batch_size
+    d2 = np.array([np.dot(keys[i, :, :].T, V[i, :, :]) for i in range(batch_size)])/batch_size
     dattention_w[2, :, :] = np.sum(d2, axis = 0)
-    d3 = np.array([np.dot(outputs6[i,:,:].T, doutputs7[i,:,:]) for i in range(hp.batch_size)])/hp.batch_size
+    d3 = np.array([np.dot(outputs6[i,:,:].T, doutputs7[i,:,:]) for i in range(batch_size)])/batch_size
     dattention_w[3, :, :] = np.sum(d3, axis = 0)
     return [dqueries, dkeys, dattention_w]
 
@@ -126,12 +129,12 @@ def backward(inputs,
     doutputs3 = outputs
     doutputs2 = np.dot(doutputs3, np.tile(w2,(2048,1)).T)
     
-    dw2 = np.array([np.dot(outputs2[i, :, :].T, doutputs3[i, :, :]) for i in range(hp.batch_size)])
-    dw2 = np.sum(dw2, axis = (0,1))/(hp.batch_size*2048)
+    dw2 = np.array([np.dot(outputs2[i, :, :].T, doutputs3[i, :, :]) for i in range(batch_size)])
+    dw2 = np.sum(dw2, axis = (0,1))/(batch_size*2048)
     doutputs1 = doutputs2
     doutputs1[index] = 0
-    dw1 = np.array([np.dot(inputs[i, :, :].T, doutputs1[i, :, :]) for i in range(hp.batch_size)])
-    dw1 = np.sum(dw1, axis = (0,1))/(hp.batch_size*512)
+    dw1 = np.array([np.dot(inputs[i, :, :].T, doutputs1[i, :, :]) for i in range(batch_size)])
+    dw1 = np.sum(dw1, axis = (0,1))/(batch_size*512)
     dinputs = np.dot(doutputs1, np.tile(w1, (512,1)).T)
     dinputs[inputs<0] = 0
     dinputs = dinputs + outputs
