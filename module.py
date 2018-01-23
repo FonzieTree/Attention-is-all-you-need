@@ -1,5 +1,3 @@
-# December 2017 by Shuming Fang. 
-# fangshuming519@gmail.com.
 # https://github.com/FonzieTree
 # -*- coding: utf-8 -*-
 import numpy as np
