@@ -1,4 +1,5 @@
 # https://github.com/FonzieTree
+#fangshuming519@gmail.com
 # -*- coding: utf-8 -*-
 import numpy as np
 batch_size = 2
